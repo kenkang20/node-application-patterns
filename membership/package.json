@@ -4,7 +4,10 @@
   "author": "Rob Conery",
   "description": "A Membership system patterned after Devise",
   "scripts": {
-    "test": "mocha -w"
+    "test": "mocha -w",
+    "test-reg": "mocha ./test/registration_spec.js",
+    "test-user": "mocha ./test/user_spec.js",
+    "test-auth": "mocha ./test/auth_spec.js"
   },
   "dependencies": {
     "bcrypt-nodejs": "0.0.3",

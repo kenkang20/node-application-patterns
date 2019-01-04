@@ -11,7 +11,8 @@ var RegResult = function(){
   var result = {
     success : false,
     message : null,
-    user : null
+    user : null,
+    log: null
   };
   return result;
 };
@@ -22,8 +23,13 @@ var Registration = function(){
   var self = this;
   var continueWith = null;
 
-  var validateInputs = function(app){
+  self.applyForMembership = function(args, next){
+    continueWith = next;
+    var app = new Application(args);
+    self.emit("application-received",app);
+  };
 
+  var validateInputs = function(app){
     //make sure there's an email and password
     if(!app.email || !app.password){
       app.setInvalid("Email and password are required");
@@ -32,14 +38,16 @@ var Registration = function(){
       app.setInvalid("Passwords don't match");
       self.emit("invalid",app);
     }else{
-      app.validateData();
+      app.validate();
       self.emit("validated",app);
     }
 
   };
 
   var checkIfUserExists = function(app){
+  
     User.findOne({email : app.email}, function(err, exists){
+     
       assert.ok(err === null);
       if(exists){
         app.setInvalid("This email already exists");
@@ -51,11 +59,13 @@ var Registration = function(){
   };
 
   var createUser = function(app){
+    
     var user = new User(app);
     user.status = "approved";
     user.hashedPassword = bc.hashSync(app.password);
     user.signInCount = 1;
-    user.save(user,function(err,newUser){
+    user.save(function(err,newUser){
+      
       assert.ok(err === null, err);
       app.user = newUser;  
       self.emit("user-created",app);
@@ -63,22 +73,17 @@ var Registration = function(){
   };
 
   var addLogEntry = function(app){
+    
     var log = new Log({
       subject : "Registration",
       userId : app.user._id,
       entry : "Successfully Registered"
     });
 
-    log.save(log, function(err,newLog){
+    log.save(function(err,newLog){
       app.log = newLog;
       self.emit("log-created",app);
     });
-  };
-
-  self.applyForMembership = function(args, next){
-    continueWith = next;
-    var app = new Application(args);
-    self.emit("application-received",app);
   };
 
   //the final call if everything works as expected
@@ -88,6 +93,7 @@ var Registration = function(){
     regResult.message = "Welcome!";
     regResult.user = app.user;
     regResult.log = app.log;
+    
     self.emit("registered", regResult);
     if(continueWith){
       continueWith(null,regResult);
@@ -105,6 +111,13 @@ var Registration = function(){
     }
   };
 
+  var registered = function(registrationOk) {
+
+  }
+
+  var notRegisterd = function(registrationOk) {
+    
+  }
 
   //The event chain for a successful registration
   self.on("application-received",validateInputs);
@@ -112,6 +125,8 @@ var Registration = function(){
   self.on("user-doesnt-exist",createUser);
   self.on("user-created",addLogEntry);
   self.on("log-created",registrationOk);
+  self.on("registered",registered);
+  self.on("not-registered",notRegisterd);
 
   //the event chain for a non-successful registration
   self.on("invalid",registrationNotOk);

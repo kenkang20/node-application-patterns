@@ -1,9 +1,11 @@
+var should = require("should");
 var Registration = require("../lib/registration");
+var User = require("../models/user.js");
 var mongoose = require('mongoose');
 
 describe("Registration", function(){
   var reg = {};
-  var db;
+  var db = null;
 
   before(function(done) {
     db = mongoose.connect('mongodb://localhost:27017/membership');
@@ -14,7 +16,6 @@ describe("Registration", function(){
   //happy path
   describe("a valid application", function () {
     var regResult ={};
-    var User = mongoose.model('User');
 
     before(function (done) {
       reg.applyForMembership({
@@ -125,8 +126,7 @@ describe("Registration", function(){
 
   describe("email already exists", function () {
     var regResult = {};
-    var User = mongoose.model('User');
-
+    
     before(function (done) {
       var newUser = {email : "rob@tekpub.com",password : "password",confirm : "password"};
       reg.applyForMembership(newUser, function(err,result){

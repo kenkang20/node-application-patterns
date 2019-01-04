@@ -1,27 +1,31 @@
-const mongoose = require('mongoose');
-const Schema = mongoose.Schema;
+//this is an Application for membership (not our executable)
+//use this to call the Register routine
+var Application = function(args){
 
-const applicationSchema = new Schema({
-    email: { type: String },
-    password: { type: String },
-    confirm: { type: String },
-    status: { type: String, default: "pending" },
-    message: { type: String, default: null },
-    user: { type: Object, default: null }
-});
-
-applicationSchema.methods.isValid = function(){
-    return this.status == "validated";
-};
-applicationSchema.methods.isInvalid = function(){
-    return !this.isValid();
-};
-applicationSchema.methods.setInvalid = function(message){
-    this.status = "invalid";
-    this.message = message;
-};
-applicationSchema.methods.validateData = function(message){
-    this.status = "validated";
-};
-
-module.exports = mongoose.model('Application', applicationSchema);
+    var app = {};
+    app.email = args.email;
+    app.password = args.password;
+    app.confirm = args.confirm;
+    app.status = "pending";
+    app.message = null;
+    app.user = null;
+  
+    app.isValid = function(){
+      return app.status == "validated";
+    };
+    app.isInvalid = function(){
+      return !isValid();
+    };
+    app.setInvalid = function(message){
+      app.status = "invalid";
+      app.message = message;
+    };
+    app.validate = function(){
+      app.status = "validated";
+    };
+  
+    return app;
+  };
+  
+  module.exports = Application;
+  
