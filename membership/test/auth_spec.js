@@ -1,27 +1,29 @@
 var Registration = require("../lib/registration");
 var assert = require("assert");
 var Auth = require("../lib/authentication");
+var User = require("../models/user.js");
 var should = require("should");
+var mongoose = require('mongoose');
 
 describe("Authentication", function () {
+  var db = null;
   var reg = {};
   var auth = {};
   
   before(function(done) {
-    db.connect({db : "membership"}, function(err,db){
-      reg = new Registration(db);
-      auth = new Auth(db);
-      db.users.destroyAll(function(err,result){
-        reg.applyForMembership({
-          email : "test@test.com",
-          password : "password",
-          confirm : "password"}, function(err,regResult){
-          assert.ok(regResult.success);
-          done();
-        });
-      });
+    db = mongoose.connect('mongodb://localhost:27017/membership');
+    reg = new Registration();
+    auth = new Auth();
+
+    reg.applyForMembership({
+      email : "test@test.com",
+      password : "password",
+      confirm : "password"}, function(err, regResult){
+      assert.ok(regResult.success);
+      done();
     });
   });
+
   describe("a valid login", function () {
     var authResult = {};
     before(function (done) {
@@ -120,6 +122,11 @@ describe("Authentication", function () {
     });
     it("returns a message saying 'Invalid login'", function(){
       authResult.message.should.equal("Invalid email or password");
+    });
+
+    after(function (done) {
+      User.remove().exec();
+      done();
     });
   });
 

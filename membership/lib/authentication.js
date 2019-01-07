@@ -19,10 +19,17 @@ var AuthResult =function(creds){
 };
 
 //The prototype which our module here will export. Takes a db instance
-var Authentication = function (db) {
+var Authentication = function () {
   var self = this;
   var continueWith = null;
   events.EventEmitter.call(self);
+
+  //Entry point - the only thing exported on our module
+  self.authenticate = function(creds, next){
+    continueWith = next;
+    var authResult = new AuthResult(creds);
+    self.emit("login-received", authResult);
+  };
 
   //validate credentials
   var validateCredentials = function(authResult){
@@ -35,7 +42,7 @@ var Authentication = function (db) {
 
   //find the user
   var findUser = function(authResult){
-    db.users.first({email : authResult.creds.email}, function(err,found){
+    User.findOne({email : authResult.creds.email}, function(err, found){
       assert.ok(err === null, err);
       if(found){
         authResult.user = new User(found);
@@ -71,9 +78,10 @@ var Authentication = function (db) {
       lastLoginAt : user.lastLoginAt,
       currentLoginAt : user.currentLoginAt
     };
-    db.users.updateOnly(updates,authResult.user.id,function(err,updates){
+
+    user.save(updates, function(err){
       assert.ok(err === null, err);
-      self.emit("stats-updated",authResult);
+      self.emit("stats-updated", authResult);
     });
   };
 
@@ -85,7 +93,7 @@ var Authentication = function (db) {
       entry : "Successfully logged in"
     });
 
-    db.logs.save(log,function(err,newLog){
+    log.save(function(err,newLog){
       authResult.log = newLog;
       self.emit("log-created",authResult);
     });
@@ -96,8 +104,8 @@ var Authentication = function (db) {
   var authOk = function(authResult){
     authResult.success = true;
     authResult.message = "Welcome!";
-    self.emit("authenticated",authResult);
-    self.emit("completed",authResult);
+    self.emit("authenticated", authResult);
+    self.emit("completed", authResult);
     if(continueWith){
       continueWith(null,authResult);
     }
@@ -106,10 +114,10 @@ var Authentication = function (db) {
   //if anything fails this will be called
   var authNotOk = function(authResult){
     authResult.success = false;
-    self.emit("not-authenticated",authResult);
-    self.emit("completed",authResult);
+    self.emit("not-authenticated", authResult);
+    self.emit("completed", authResult);
     if(continueWith){
-      continueWith(null,authResult);
+      continueWith(null, authResult);
     }
   };
 
@@ -123,14 +131,6 @@ var Authentication = function (db) {
 
   //The event chain for auth failure
   self.on("invalid",authNotOk);
-
-  //Entry point - the only thing exported on our module
-  self.authenticate = function(creds,next){
-    continueWith = next;
-    var authResult = new AuthResult(creds);
-    self.emit("login-received", authResult);
-  };
-
 };
 util.inherits(Authentication, events.EventEmitter);
 module.exports = Authentication;
